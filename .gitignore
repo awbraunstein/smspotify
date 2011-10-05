@@ -1,2 +1,3 @@
 config.rb
 spotify_appkey.key
+*.db
