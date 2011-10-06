@@ -25,10 +25,47 @@ DataMapper.finalize
 DataMapper.auto_migrate!
 ########################################################
 
-
+account_sid= 'AC211b4e7f967bbbf12edcf890057b3b62'
+auth_token = '678f0bf63d6bc201b26075a0cb302270'
 # set up a client to talk to the Twilio REST API
-@client = Twilio::REST::Client.new ENV['TWILIO_ACCOUNT_SID'], ENV['TWILIO_AUTH_TOKEN']
+@client = Twilio::REST::Client.new account_sid, auth_token
 @account = @client.account
+
+
+def request_helper(from,body)
+  account_sid= 'AC211b4e7f967bbbf12edcf890057b3b62'
+  auth_token = '678f0bf63d6bc201b26075a0cb302270'
+  @client = Twilio::REST::Client.new account_sid, auth_token
+  @account = @client.account
+  if body.size > 0
+    results = Sp_search.get_sp_uris(body)
+    @sp_request = Choice.create(
+                                :number => from,
+                                :a => results[0][:uri],
+                                :b => results[1][:uri],
+                                :c => results[2][:uri],
+                                :d => results[3][:uri],
+                                :created_at => Time.now
+                                )
+    text_response =  "respond with:\n"
+    text_response +="a for #{results[0][:name]}\n"
+    text_response +="b for #{results[1][:name]}\n"
+    text_response +="c for #{results[2][:name]}\n"
+    text_response +="d for #{results[3][:name]}"
+    
+
+    @account.sms.messages.create(
+                                 :from => '+12158746339',
+                                 :to => from,
+                                 :body => text_response
+                                 )
+    # response = Twilio::TwiML::Response.new do |r|
+    #   r.Sms = text_response
+    # end
+    # "#{response.text}"
+  end
+end
+
 
 get '/' do
   "Nope, chuck testa"
@@ -39,24 +76,31 @@ post '/' do
   from = params[:From]
   
   @rec = Choice.first(:number => from)
-
-  if @rec.nil?
-    reults = Sp_search.get_sp_uris(body)
-    @sp_request = Choice.create(
-                       :number => from,
-                       :a => results[0][:uri],
-                       :b => results[1][:uri],
-                       :c => results[2][:uri],
-                       :d => results[3][:uri],
-                       :created_at => Time.now
-                       )
-
-  else
     
+  if @rec.nil?
+    request_helper(from,body)
+  else
+    body.downcase!
+    uri = ""
+    case body
+    when "a"
+      uri=@rec.a
+    when "b"
+      uri=@rec.b
+    when "c"
+      uri=@rec.c
+    when "d"
+      uri=@rec.d
+    else
+      @rec.destroy
+      request_helper(body)
+    end
+    if uri != ""
+      response = Twilio::TwiML::Response.new do |r|
+        r.Sms uri
+      end
+      "#{response.text}"
+    end
   end
-  
-  response = Twilio::TwiML::Response.new do |r|
-    r.Sms "hello there #{params[:From]}"
-  end
-  "#{response.text}"
 end
+
