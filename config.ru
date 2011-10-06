@@ -1,2 +1,2 @@
-require 'smspotify'g
+require 'smspotify'
 run Sinatra::Application
