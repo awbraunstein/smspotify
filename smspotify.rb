@@ -23,20 +23,28 @@ end
 
 DataMapper.finalize
 DataMapper.auto_migrate!
-########################################################
+#######################################################
+############## HALLON SPOTIFY SETUP ###################
 
-account_sid= 'AC211b4e7f967bbbf12edcf890057b3b62'
-auth_token = '678f0bf63d6bc201b26075a0cb302270'
-# set up a client to talk to the Twilio REST API
-@client = Twilio::REST::Client.new account_sid, auth_token
-@account = @client.account
+session = Hallon::Session.initialize IO.read(ENV['HALLON_APPKEY']) do
+  on(:log_message) do |message|
+    puts "[LOG] #{message}"
+  end
+end
 
+session.login ENV['HALLON_USERNAME'], ENV['HALLON_PASSWORD']
+
+session.wait_for(:logged_in) { |error| Hallon::Error.maybe_raise(error) }
+session.wait_for(:connection_error) do |error|
+  session.logged_in? or Hallon::Error.maybe_raise(error)
+end
+
+#######################################################
+
+
+@playlist_uri = "spotify:user:awbraunstein:playlist:0QAdX8dGjNBSO9hBTYs9GU"
 
 def request_helper(from,body)
-  account_sid= 'AC211b4e7f967bbbf12edcf890057b3b62'
-  auth_token = '678f0bf63d6bc201b26075a0cb302270'
-  @client = Twilio::REST::Client.new account_sid, auth_token
-  @account = @client.account
   if body.size > 0
     results = Sp_search.get_sp_uris(body)
     @sp_request = Choice.create(
@@ -53,16 +61,10 @@ def request_helper(from,body)
     text_response +="c for #{results[2][:name]}\n"
     text_response +="d for #{results[3][:name]}"
     
-
-    @account.sms.messages.create(
-                                 :from => '+12158746339',
-                                 :to => from,
-                                 :body => text_response
-                                 )
-    # response = Twilio::TwiML::Response.new do |r|
-    #   r.Sms = text_response
-    # end
-    # "#{response.text}"
+    response = Twilio::TwiML::Response.new do |r|
+      r.Sms text_response
+     end
+      "#{response.text}"
   end
 end
 
@@ -78,7 +80,7 @@ post '/' do
   @rec = Choice.first(:number => from)
     
   if @rec.nil?
-    request_helper(from,body)
+    return request_helper(from,body)
   else
     body.downcase!
     uri = ""
@@ -93,14 +95,19 @@ post '/' do
       uri=@rec.d
     else
       @rec.destroy
-      request_helper(body)
+      return request_helper(body)
     end
     if uri != ""
-      response = Twilio::TwiML::Response.new do |r|
-        r.Sms uri
-      end
-      "#{response.text}"
+      add_song_to_playlist (uri)
     end
   end
 end
 
+
+def add_song_to_playlist(uri)
+  track_link = Hallon::Link.new(uri)
+  playlist_link = Hallon::Link.new(@playlist_uri)
+  playlist = Hallon::Playlist.initialize(playlist_link)
+  track = Hallon::Track.initialize(track_link)
+  
+end
