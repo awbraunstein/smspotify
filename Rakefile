@@ -1,4 +1,4 @@
-require './bsmspotify'
+require './smspotify'
 require 'resque/tasks'
 
 task "resque:setup" do
