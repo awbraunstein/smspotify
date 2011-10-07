@@ -1,2 +1,6 @@
-require 'smspotify'
-run Sinatra::Application
+require './smspotify'
+require 'resque/server'
+
+run Rack::URLMap.new \
+  "/"       => Sinatra::Application,
+  "/resque" => Resque::Server.new

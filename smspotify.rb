@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require 'rubygems'
 require 'data_mapper'
 require 'twilio-ruby'
@@ -105,9 +106,29 @@ end
 
 
 def add_song_to_playlist(uri)
-  track_link = Hallon::Link.new(uri)
-  playlist_link = Hallon::Link.new(@playlist_uri)
-  playlist = Hallon::Playlist.initialize(playlist_link)
-  track = Hallon::Track.initialize(track_link)
+
+  Resque.enqueue(Sp_add_track, uri)
   
 end
+
+module Sp_add_track
+
+  @queue = :sp_task
+  
+  def self.perform(track_uri)
+    playlist = Hallon::Playlist.new(@playlist_uri)
+    session.wait_for { playlist.loaded? }
+    track_uris = [track_uri]
+    position = playlist.tracks.size    
+    tracks = track_uris.map { |x| Hallon::Track.new(x) }
+    session.wait_for { tracks.all?(&:loaded?) }
+    FFI::MemoryPointer.new(:pointer, tracks.length) do |tracks_ary|
+      tracks_ary.write_array_of_pointer tracks.map(&:pointer)      
+      error = Spotify.playlist_add_tracks(playlist.pointer, tracks_ary, tracks.length, position, session.pointer)
+      Hallon::Error.maybe_raise(error)
+    end
+    session.process_events
+    session.wait_for { not playlist.pending? } 
+  end
+end
+
