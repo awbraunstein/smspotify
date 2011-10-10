@@ -33,7 +33,7 @@ $session = Hallon::Session.initialize IO.read(ENV['HALLON_APPKEY']) do
   end
 end
 
-$session.login ENV['HALLON_USERNAME'], ENV['HALLON_PASSWORD']
+$session.login ENV['HALLON_USERNAME'], ENV['HALLON_PASSWORD'], true
 
 $session.wait_for(:logged_in) { |error| Hallon::Error.maybe_raise(error) }
 $session.wait_for(:connection_error) do |error|
@@ -106,35 +106,32 @@ post '/' do
 end
 
 
-def add_song_to_playlist(uri)
+def add_song_to_playlist(track_uri)
 
-  Resque.enqueue(Sp_add_track, uri)
+  puts "[LOG] #{$session.to_s}"
+  puts "[LOG] Starting worker with #{track_uri}"
   
-end
-
-module Sp_add_track
-
-  @queue = :sp_task
   
-  def self.perform(track_uri)
-
-    puts "[LOG] Starting worker with #{track_uri}"
-    playlist = Hallon::Playlist.new("spotify:user:awbraunstein:playlist:0QAdX8dGjNBSO9hBTYs9GU")
-    $session.wait_for { playlist.loaded? }
-    puts "[LOG] #{playlist.name}"
-    track_uris = [track_uri]
-    position = playlist.tracks.size    
-    tracks = track_uris.map { |x| Hallon::Track.new(Hallon::Link.new(x)) }
-    $session.wait_for { tracks.all?(&:loaded?) }
-    puts "[LOG] Tracks made"
-    FFI::MemoryPointer.new(:pointer, tracks.length) do |tracks_ary|
-      tracks_ary.write_array_of_pointer tracks.map(&:pointer)      
-      error = Spotify.playlist_add_tracks(playlist.pointer, tracks_ary, tracks.length, position, $session.pointer)
-      Hallon::Error.maybe_raise(error)
-    end
-    puts "[LOG] Added tracks to playlist. Now waiting."
-    $session.process_events
-    $session.wait_for { not playlist.pending? } 
+  puts "Loading Playlist"
+  playlist = Hallon::Playlist.new("spotify:user:awbraunstein:playlist:0QAdX8dGjNBSO9hBTYs9GU")
+  $session.wait_for { playlist.loaded? }
+  puts "[LOG] #{playlist.name}"
+  track_uris = [track_uri]
+    
+  puts "Loading Track"
+  
+  tracks = track_uris.map { |x| Hallon::Track.new(Hallon::Link.new(x)) }
+  $session.wait_for { tracks.all?(&:loaded?) }
+  position = playlist.tracks.size    
+  puts "[LOG] Tracks made"
+  FFI::MemoryPointer.new(:pointer, tracks.length) do |tracks_ary|
+    tracks_ary.write_array_of_pointer tracks.map(&:pointer)      
+    error = Spotify.playlist_add_tracks(playlist.pointer, tracks_ary, 1, position, $session.pointer)
+    Hallon::Error.maybe_raise(error)
   end
+  puts "[LOG] Added tracks to playlist. Now waiting."
+  $session.process_events
+  $session.wait_for { not playlist.pending? } 
+ 
 end
 
