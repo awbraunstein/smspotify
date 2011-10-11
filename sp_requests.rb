@@ -1,4 +1,4 @@
-require 'hallon'
+# -*- coding: utf-8 -*-
 require 'net/http'
 require 'json'
 require 'cgi'

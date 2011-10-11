@@ -7,7 +7,7 @@ require './config'
 require  'dm-migrations'
 require './sp_requests'
 
-##################### Database setup ####################
+##################### Database setup #################
 DataMapper.setup(:default, 'sqlite:development.db')
 
 class Choice
