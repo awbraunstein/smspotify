@@ -10,11 +10,8 @@ added to the playlist.
 ## Setup
    
 1. Install libspotify
-
 2. run
-
 `bundle install`
-
 3. create a config.rb file with
 
 ```ruby
