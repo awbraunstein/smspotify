@@ -11,16 +11,17 @@ added to the playlist.
    
 1. Install libspotify
 
-2. create a config.rb file with
+2. run
+
+`bundle install`
+
+3. create a config.rb file with
 
 ```ruby
 ENV['HALLON_USERNAME'] = 'username'
 ENV['HALLON_PASSWORD'] = 'password'
 ENV['HALLON_APPKEY']   = File.expand_path('Path to appkey') 
 ```
-3. run
-
-`bundle install`
 
 ## Usage
 
@@ -29,3 +30,16 @@ ENV['HALLON_APPKEY']   = File.expand_path('Path to appkey')
 ## Known Bugs
 
 * libspotify will sometimes segfault
+
+## Developers
+
+* Andrew Braunstein
+
+## Thanks
+
+* This wouldn't have been possible without the work of Kim Burgestrand
+  and his gem Hallon
+
+* Spotify and their awesome service
+
+* Twilio for their incredible API
