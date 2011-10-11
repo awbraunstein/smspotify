@@ -13,15 +13,14 @@ added to the playlist.
 
 2. create a config.rb file with
 
-    ENV['HALLON_USERNAME'] = 'username'
-
-    ENV['HALLON_PASSWORD'] = 'password'
-
-    ENV['HALLON_APPKEY']   = File.expand_path('Path to appkey') 
-
+```ruby
+ENV['HALLON_USERNAME'] = 'username'
+ENV['HALLON_PASSWORD'] = 'password'
+ENV['HALLON_APPKEY']   = File.expand_path('Path to appkey') 
+```
 3. run
 
-    bundle install
+`bundle install`
 
 ## Usage
 
