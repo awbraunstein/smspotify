@@ -33,18 +33,25 @@ $session = Hallon::Session.initialize IO.read(ENV['HALLON_APPKEY']) do
   end
 end
 
-$session.login ENV['HALLON_USERNAME'], ENV['HALLON_PASSWORD'], true
+$session.login! ENV['HALLON_USERNAME'], ENV['HALLON_PASSWORD']
 
-$session.wait_for(:logged_in) { |error| Hallon::Error.maybe_raise(error) }
-$session.wait_for(:connection_error) do |error|
-  $session.logged_in? or Hallon::Error.maybe_raise(error)
-end
+puts "[LOG] Logged in as #{ENV['HALLON_USERNAME']}"
+
+
+@playlist_uri = "spotify:user:awbraunstein:playlist:0QAdX8dGjNBSO9hBTYs9GU"
+puts "Loading Playlist"
+
+$playlist = Hallon::Playlist.new(@playlist_uri)
+$session.wait_for { $playlist.loaded? }
+puts "[LOG] #{playlist.name}"
+
+
 #######################################################
 
 
     
 
-@playlist_uri = "spotify:user:awbraunstein:playlist:0QAdX8dGjNBSO9hBTYs9GU"
+
 
 def request_helper(from,body)
   if body.size > 0
@@ -109,18 +116,12 @@ end
 def add_song_to_playlist(track_uri)
 
   puts "[LOG] #{$session.to_s}"
-  puts "[LOG] Starting worker with #{track_uri}"
-  
-  
-  puts "Loading Playlist"
-  playlist = Hallon::Playlist.new("spotify:user:awbraunstein:playlist:0QAdX8dGjNBSO9hBTYs9GU")
-  $session.wait_for { playlist.loaded? }
-  puts "[LOG] #{playlist.name}"
     
   puts "Loading Track"
   
   track = Hallon::Track.new(track_uri) 
   $session.wait_for { track.loaded? }
+  $session.wait_for { not playlist.pending? } 
   position = playlist.tracks.size    
   puts "[LOG] Track made"
   tracks = [track]
