@@ -6,6 +6,7 @@ require 'sinatra'
 require './config'
 require  'dm-migrations'
 require './sp_requests'
+require 'hallon'
 
 ##################### Database setup #################
 DataMapper.setup(:default, 'sqlite:development.db')
@@ -38,12 +39,12 @@ $session.login! ENV['HALLON_USERNAME'], ENV['HALLON_PASSWORD']
 puts "[LOG] Logged in as #{ENV['HALLON_USERNAME']}"
 
 
-@playlist_uri = "spotify:user:awbraunstein:playlist:0QAdX8dGjNBSO9hBTYs9GU"
+$playlist_uri = "spotify:user:awbraunstein:playlist:0QAdX8dGjNBSO9hBTYs9GU"
 puts "Loading Playlist"
 
-$playlist = Hallon::Playlist.new(@playlist_uri)
+$playlist = Hallon::Playlist.new($playlist_uri)
 $session.wait_for { $playlist.loaded? }
-puts "[LOG] #{playlist.name}"
+puts "[LOG] #{$playlist.name}"
 
 
 #######################################################
@@ -121,18 +122,18 @@ def add_song_to_playlist(track_uri)
   
   track = Hallon::Track.new(track_uri) 
   $session.wait_for { track.loaded? }
-  $session.wait_for { not playlist.pending? } 
-  position = playlist.tracks.size    
+  $session.wait_for { not $playlist.pending? } 
+  position = $playlist.tracks.size    
   puts "[LOG] Track made"
   tracks = [track]
   FFI::MemoryPointer.new(:pointer, 1) do |tracks_ary|
     tracks_ary.write_array_of_pointer tracks.map(&:pointer)      
-    error = Spotify.playlist_add_tracks(playlist.pointer, tracks_ary, 1, position, $session.pointer)
+    error = Spotify.playlist_add_tracks($playlist.pointer, tracks_ary, 1, position, $session.pointer)
     Hallon::Error.maybe_raise(error)
   end
   puts "[LOG] Added tracks to playlist. Now waiting."
   $session.process_events
-  $session.wait_for { not playlist.pending? } 
+  $session.wait_for { not $playlist.pending? } 
  
 end
 
