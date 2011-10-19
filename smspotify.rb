@@ -80,7 +80,7 @@ end
 
 
 get '/' do
-  "Nope, chuck testa!"
+  redirect '/index.html'
 end
 
 post '/' do  
