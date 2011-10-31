@@ -112,9 +112,11 @@ end
 post '/' do  
   body = params[:Body]
   from = params[:From]
-  
+
+  puts "[LOG] #{body} from #{from}"
+
   @rec = Choice.first(:number => from)
-    
+  
   if @rec.nil?
     return request_helper(from,body)
   else
@@ -134,6 +136,7 @@ post '/' do
       return request_helper(from,body)
     end
     if uri != ""
+      puts "adding uri: #{uri}"
       add_song_to_playlist (uri)
     end
   end

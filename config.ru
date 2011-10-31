@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-require './smspotify'
+log = File.new('log/sinatra.log', 'a')
+$stdout.reopen(log)
+$stderr.reopen(log)
 
-run Rack::URLMap.new \
-  "/"       => Sinatra::Application,
+require './smspotify'
+run Sinatra::Application
